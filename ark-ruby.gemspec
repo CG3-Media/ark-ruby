@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = "Ruby client for Ark error tracking"
   spec.description   = "Automatically capture and report errors from your Ruby/Rails apps to Ark"
-  spec.homepage      = "https://github.com/yourusername/ark"
+  spec.homepage      = "https://github.com/CG3-Media/ark-ruby"
   spec.license       = "MIT"
   spec.required_ruby_version = ">= 3.0.0"
 

@@ -1,14 +1,13 @@
 # Ark Ruby Client
 
-Automatically capture and report errors from your Ruby/Rails applications to [Ark](https://github.com/yourusername/ark).
+Automatically capture and report errors from your Ruby/Rails applications to [Ark](https://github.com/CG3-Media/ark).
 
 ## Installation
 
 Add to your Gemfile:
 
 ```ruby
-# From GitHub
-gem "ark-ruby", github: "yourusername/ark", glob: "gems/ark-ruby/*.gemspec"
+gem "ark-ruby", github: "CG3-Media/ark-ruby"
 ```
 
 Then run:
