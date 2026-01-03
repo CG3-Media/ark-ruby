@@ -3,7 +3,7 @@
 module Ark
   class Configuration
     attr_accessor :api_key, :api_url, :environment, :enabled,
-                  :excluded_exceptions, :before_send, :async
+                  :excluded_exceptions, :before_send, :async, :verify_ssl
 
     def initialize
       @api_key = ENV["ARK_API_KEY"]
@@ -11,6 +11,7 @@ module Ark
       @environment = ENV["RAILS_ENV"] || ENV["RACK_ENV"] || "development"
       @enabled = true
       @async = true
+      @verify_ssl = true
       @excluded_exceptions = [
         "ActiveRecord::RecordNotFound",
         "ActionController::RoutingError",
