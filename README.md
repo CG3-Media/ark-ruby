@@ -112,6 +112,31 @@ class ApplicationController < ActionController::Base
 end
 ```
 
+## Release Tracking
+
+Ark automatically detects your application's release/revision to help you track which version of your code is causing errors.
+
+**Auto-detection priority:**
+
+1. **Environment variables** (checked in order):
+   - `HEROKU_SLUG_COMMIT` (Heroku)
+   - `RENDER_GIT_COMMIT` (Render)
+   - `RAILWAY_GIT_COMMIT_SHA` (Railway)
+   - `REVISION` (generic)
+   - `GIT_COMMIT` (generic)
+
+2. **REVISION file** - Created by Capistrano during deployment
+
+3. **Git** - Falls back to `git rev-parse HEAD`
+
+**Manual configuration:**
+
+```ruby
+Ark.configure do |config|
+  config.release = "v1.2.3"  # Or a git SHA
+end
+```
+
 ## Configuration Options
 
 | Option | Default | Description |
@@ -119,6 +144,7 @@ end
 | `api_key` | `ENV["ARK_API_KEY"]` | Your project's API key |
 | `api_url` | `http://localhost:3000` | Your Ark server URL |
 | `environment` | `Rails.env` | Environment name |
+| `release` | Auto-detected | Release/version identifier |
 | `enabled` | `true` | Enable/disable error reporting |
 | `async` | `true` | Send errors in background thread |
 | `excluded_exceptions` | `[ActiveRecord::RecordNotFound, ...]` | Exceptions to ignore |

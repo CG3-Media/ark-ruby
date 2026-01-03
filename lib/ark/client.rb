@@ -31,8 +31,9 @@ module Ark
           message: truncate(message, 10_000),
           backtrace: clean_backtrace(backtrace),
           context: enrich_context(context),
-          environment: environment || Ark.configuration.environment
-        }
+          environment: environment || Ark.configuration.environment,
+          release: Ark.configuration.release
+        }.compact
       }
     end
 
