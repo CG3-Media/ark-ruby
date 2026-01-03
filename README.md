@@ -7,7 +7,7 @@ Automatically capture and report errors from your Ruby/Rails applications to [Ar
 Add to your Gemfile:
 
 ```ruby
-gem "ark-ruby", github: "CG3-Media/ark-ruby"
+gem "ark-ruby", github: "CG3-Media/ark-ruby", require: "ark"
 ```
 
 Then run:
