@@ -5,13 +5,24 @@ require "rails/railtie"
 module Ark
   class Railtie < ::Rails::Railtie
     initializer "ark.configure", before: :initialize_logger do
-      Ark.configure do |config|
-        config.environment = Rails.env
+      # Load from config/ark.yml if it exists
+      yaml_path = Rails.root.join("config", "ark.yml")
+
+      if File.exist?(yaml_path)
+        if config = Configuration.from_yaml(yaml_path)
+          config.environment = Rails.env
+          Ark.configuration = config
+        end
+      else
+        # Fall back to environment variable configuration
+        Ark.configure do |config|
+          config.environment = Rails.env
+        end
       end
     end
 
     initializer "ark.exceptions_catcher", after: :initialize_logger do
-      # Hook into Rails exception rendering (like Honeybadger does)
+      # Hook into Rails exception rendering to capture unhandled errors
       if defined?(::ActionDispatch::DebugExceptions)
         ::ActionDispatch::DebugExceptions.prepend(Ark::ExceptionsCatcher)
       end

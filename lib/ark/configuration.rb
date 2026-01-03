@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
+require "yaml"
+require "erb"
+
 module Ark
   class Configuration
     attr_accessor :api_key, :api_url, :environment, :enabled,
-                  :excluded_exceptions, :before_send, :async, :verify_ssl
+                  :excluded_exceptions, :before_send, :async, :verify_ssl,
+                  :development_environments
     attr_writer :release
 
     def initialize
@@ -21,6 +25,38 @@ module Ark
       ]
       @before_send = nil
       @release = nil
+      @development_environments = %w[development test cucumber]
+    end
+
+    # Load configuration from a YAML file
+    def self.from_yaml(path)
+      return nil unless File.exist?(path)
+
+      yaml_content = File.read(path)
+      parsed = YAML.safe_load(ERB.new(yaml_content).result, permitted_classes: [], permitted_symbols: [], aliases: true)
+      return nil unless parsed.is_a?(Hash)
+
+      config = new
+      config.apply_yaml(parsed)
+      config
+    end
+
+    def apply_yaml(hash)
+      @api_key = hash["api_key"] if hash["api_key"]
+      @api_url = hash["api_url"] if hash["api_url"]
+      @environment = hash["env"] if hash["env"]
+      @enabled = hash["enabled"] if hash.key?("enabled")
+      @async = hash["async"] if hash.key?("async")
+      @verify_ssl = hash["verify_ssl"] if hash.key?("verify_ssl")
+      @release = hash["release"] || hash["revision"] if hash["release"] || hash["revision"]
+
+      if hash["development_environments"].is_a?(Array)
+        @development_environments = hash["development_environments"]
+      end
+
+      if hash["excluded_exceptions"].is_a?(Array)
+        @excluded_exceptions += hash["excluded_exceptions"]
+      end
     end
 
     # Auto-detect release/revision if not explicitly set
@@ -69,7 +105,15 @@ module Ark
     end
 
     def enabled?
-      @enabled && !@api_key.nil? && !@api_key.empty?
+      return false if @api_key.nil? || @api_key.empty?
+      return false unless @enabled
+      return false if development_environments.include?(@environment)
+
+      true
+    end
+
+    def report_data?
+      enabled?
     end
 
     def should_capture?(exception)

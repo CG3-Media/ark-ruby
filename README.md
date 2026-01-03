@@ -18,14 +18,39 @@ bundle install
 
 ## Configuration
 
-### Rails
+### Rails (YAML)
 
-The gem auto-configures with Rails. Just set your environment variables:
+Create `config/ark.yml`:
+
+```yaml
+---
+api_key: 'your-project-api-key'
+api_url: 'https://ark.yourserver.com'
+env: "<%= Rails.env %>"
+
+# Ark won't report errors in these environments
+development_environments:
+  - test
+  - development
+  - cucumber
+
+# Exclude specific exception types
+# excluded_exceptions:
+#   - MyCustomException
+```
+
+The gem auto-loads this file on Rails startup.
+
+### Rails (Environment Variables)
+
+Alternatively, set environment variables:
 
 ```bash
 export ARK_API_KEY="your-project-api-key"
-export ARK_API_URL="http://localhost:3000"  # Your Ark server URL
+export ARK_API_URL="https://ark.yourserver.com"
 ```
+
+### Rails (Initializer)
 
 Or configure in an initializer:
 
@@ -147,6 +172,7 @@ end
 | `release` | Auto-detected | Release/version identifier |
 | `enabled` | `true` | Enable/disable error reporting |
 | `async` | `true` | Send errors in background thread |
+| `development_environments` | `[development, test, cucumber]` | Environments where errors are not reported |
 | `excluded_exceptions` | `[ActiveRecord::RecordNotFound, ...]` | Exceptions to ignore |
 | `before_send` | `nil` | Callback to modify/filter events |
 
