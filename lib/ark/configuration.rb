@@ -6,8 +6,7 @@ require "erb"
 module Ark
   class Configuration
     attr_accessor :api_key, :api_url, :environment, :enabled,
-                  :excluded_exceptions, :before_send, :async, :verify_ssl,
-                  :development_environments
+                  :excluded_exceptions, :before_send, :async, :verify_ssl
     attr_writer :release
 
     def initialize
@@ -25,7 +24,7 @@ module Ark
       ]
       @before_send = nil
       @release = nil
-      @development_environments = %w[development test cucumber]
+      @env_configured = false  # Track if current env has config
     end
 
     # Load configuration from a YAML file (supports environment-specific config like database.yml)
@@ -44,18 +43,24 @@ module Ark
     def apply_yaml(hash, env = nil)
       env ||= @environment
 
-      # Check if this is environment-specific config (has production/development/etc keys)
-      if hash.key?("production") || hash.key?("development") || hash.key?("staging") || hash.key?("default")
-        # Merge default with environment-specific config
-        defaults = hash["default"] || {}
-        env_config = hash[env] || {}
-        merged = deep_merge(defaults, env_config)
+      # Check if this is environment-specific config (has environment keys)
+      env_keys = %w[production development staging test]
+      has_env_config = env_keys.any? { |k| hash.key?(k) } || hash.key?("default")
 
-        # Also grab top-level settings like development_environments
-        apply_flat_config(hash)
-        apply_env_config(merged)
+      if has_env_config
+        # Environment-specific config - only enable if current env is defined
+        defaults = hash["default"] || {}
+        env_config = hash[env]
+
+        if env_config || defaults.any?
+          @env_configured = true
+          merged = deep_merge(defaults, env_config || {})
+          apply_env_config(merged)
+        end
+        # If no config for this env and no defaults, @env_configured stays false
       else
-        # Flat config (legacy format)
+        # Flat config (legacy format) - always configured
+        @env_configured = true
         apply_flat_config(hash)
       end
     end
@@ -70,10 +75,6 @@ module Ark
       @async = hash["async"] if hash.key?("async")
       @verify_ssl = hash["verify_ssl"] if hash.key?("verify_ssl")
       @release = hash["release"] || hash["revision"] if hash["release"] || hash["revision"]
-
-      if hash["development_environments"].is_a?(Array)
-        @development_environments = hash["development_environments"]
-      end
 
       if hash["excluded_exceptions"].is_a?(Array)
         @excluded_exceptions += hash["excluded_exceptions"]
@@ -149,9 +150,9 @@ module Ark
     end
 
     def enabled?
+      return false unless @env_configured
       return false if @api_key.nil? || @api_key.empty?
       return false unless @enabled
-      return false if development_environments.include?(@environment)
 
       true
     end

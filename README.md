@@ -39,14 +39,10 @@ staging:
     url: 'https://ark.yourserver.com'
     env: staging
 
-# Ark won't report errors in these environments
-development_environments:
-  - test
-  - development
-  - cucumber
+# Environments without a section (like development/test) won't report errors
 ```
 
-The gem auto-loads this file on Rails startup and uses the config matching `Rails.env`.
+The gem auto-loads this file on Rails startup and uses the config matching `Rails.env`. **If no config exists for the current environment, errors won't be reported** - so you only need to define the environments where you want error tracking enabled.
 
 ### Rails (Environment Variables)
 
@@ -179,7 +175,6 @@ end
 | `release` | Auto-detected | Release/version identifier |
 | `enabled` | `true` | Enable/disable error reporting |
 | `async` | `true` | Send errors in background thread |
-| `development_environments` | `[development, test, cucumber]` | Environments where errors are not reported |
 | `excluded_exceptions` | `[ActiveRecord::RecordNotFound, ...]` | Exceptions to ignore |
 | `before_send` | `nil` | Callback to modify/filter events |
 
