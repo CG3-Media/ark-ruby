@@ -32,7 +32,8 @@ module Ark
           backtrace: clean_backtrace(backtrace),
           context: enrich_context(context),
           environment: environment || Ark.configuration.environment,
-          release: Ark.configuration.release
+          release: Ark.configuration.release,
+          sdk: { name: "ark-ruby", version: Ark::VERSION }
         }.compact
       }
     end
