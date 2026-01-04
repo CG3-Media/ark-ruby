@@ -65,6 +65,29 @@ module Ark
       end
     end
 
+    # Auto-detect release/revision if not explicitly set
+    # Priority: manual config > env vars > REVISION file > git
+    def release
+      @release ||= detect_release
+    end
+
+    def enabled?
+      return false unless @env_configured
+      return false if @api_key.nil? || @api_key.empty?
+      return false unless @enabled
+
+      true
+    end
+
+    def report_data?
+      enabled?
+    end
+
+    def should_capture?(exception)
+      return false unless enabled?
+      !excluded_exceptions.include?(exception.class.name)
+    end
+
     private
 
     def apply_flat_config(hash)
@@ -104,14 +127,6 @@ module Ark
       end
     end
 
-    # Auto-detect release/revision if not explicitly set
-    # Priority: manual config > env vars > REVISION file > git
-    def release
-      @release ||= detect_release
-    end
-
-    private
-
     def detect_release
       # 1. Check common deployment env vars
       ENV["HEROKU_SLUG_COMMIT"] ||      # Heroku
@@ -147,23 +162,6 @@ module Ark
 
     def git_available?
       system("git rev-parse --git-dir >/dev/null 2>&1")
-    end
-
-    def enabled?
-      return false unless @env_configured
-      return false if @api_key.nil? || @api_key.empty?
-      return false unless @enabled
-
-      true
-    end
-
-    def report_data?
-      enabled?
-    end
-
-    def should_capture?(exception)
-      return false unless enabled?
-      !excluded_exceptions.include?(exception.class.name)
     end
   end
 end
