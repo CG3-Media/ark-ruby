@@ -20,26 +20,33 @@ bundle install
 
 ### Rails (YAML)
 
-Create `config/ark.yml`:
+Create `config/ark.yml` with environment-specific config (like `database.yml`):
 
 ```yaml
 ---
-api_key: 'your-project-api-key'
-api_url: 'https://ark.yourserver.com'
-env: "<%= Rails.env %>"
+default:
+  url: 'https://ark.yourserver.com'
+
+production:
+  api:
+    key: 'your-production-api-key'
+    url: 'https://ark.yourserver.com'
+    env: production
+
+staging:
+  api:
+    key: 'your-staging-api-key'
+    url: 'https://ark.yourserver.com'
+    env: staging
 
 # Ark won't report errors in these environments
 development_environments:
   - test
   - development
   - cucumber
-
-# Exclude specific exception types
-# excluded_exceptions:
-#   - MyCustomException
 ```
 
-The gem auto-loads this file on Rails startup.
+The gem auto-loads this file on Rails startup and uses the config matching `Rails.env`.
 
 ### Rails (Environment Variables)
 

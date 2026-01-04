@@ -28,8 +28,8 @@ module Ark
       @development_environments = %w[development test cucumber]
     end
 
-    # Load configuration from a YAML file
-    def self.from_yaml(path)
+    # Load configuration from a YAML file (supports environment-specific config like database.yml)
+    def self.from_yaml(path, env = nil)
       return nil unless File.exist?(path)
 
       yaml_content = File.read(path)
@@ -37,13 +37,34 @@ module Ark
       return nil unless parsed.is_a?(Hash)
 
       config = new
-      config.apply_yaml(parsed)
+      config.apply_yaml(parsed, env)
       config
     end
 
-    def apply_yaml(hash)
+    def apply_yaml(hash, env = nil)
+      env ||= @environment
+
+      # Check if this is environment-specific config (has production/development/etc keys)
+      if hash.key?("production") || hash.key?("development") || hash.key?("staging") || hash.key?("default")
+        # Merge default with environment-specific config
+        defaults = hash["default"] || {}
+        env_config = hash[env] || {}
+        merged = deep_merge(defaults, env_config)
+
+        # Also grab top-level settings like development_environments
+        apply_flat_config(hash)
+        apply_env_config(merged)
+      else
+        # Flat config (legacy format)
+        apply_flat_config(hash)
+      end
+    end
+
+    private
+
+    def apply_flat_config(hash)
       @api_key = hash["api_key"] if hash["api_key"]
-      @api_url = hash["api_url"] if hash["api_url"]
+      @api_url = hash["api_url"] || hash["url"] if hash["api_url"] || hash["url"]
       @environment = hash["env"] if hash["env"]
       @enabled = hash["enabled"] if hash.key?("enabled")
       @async = hash["async"] if hash.key?("async")
@@ -56,6 +77,29 @@ module Ark
 
       if hash["excluded_exceptions"].is_a?(Array)
         @excluded_exceptions += hash["excluded_exceptions"]
+      end
+    end
+
+    def apply_env_config(hash)
+      # Handle nested api: structure
+      api = hash["api"] || hash
+      @api_key = api["key"] if api["key"]
+      @api_url = api["url"] if api["url"]
+      @environment = api["env"] if api["env"]
+      @enabled = api["enabled"] if api.key?("enabled")
+      @release = api["release"] || api["revision"] if api["release"] || api["revision"]
+    end
+
+    def deep_merge(base, override)
+      return override if base.nil?
+      return base if override.nil?
+
+      base.merge(override) do |_key, old_val, new_val|
+        if old_val.is_a?(Hash) && new_val.is_a?(Hash)
+          deep_merge(old_val, new_val)
+        else
+          new_val
+        end
       end
     end
 

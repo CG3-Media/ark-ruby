@@ -5,12 +5,12 @@ require "rails/railtie"
 module Ark
   class Railtie < ::Rails::Railtie
     initializer "ark.configure", before: :initialize_logger do
-      # Load from config/ark.yml if it exists
+      # Load from config/ark.yml if it exists (supports environment-specific config)
       yaml_path = Rails.root.join("config", "ark.yml")
 
       if File.exist?(yaml_path)
-        if config = Configuration.from_yaml(yaml_path)
-          config.environment = Rails.env
+        if config = Configuration.from_yaml(yaml_path, Rails.env)
+          config.environment ||= Rails.env
           Ark.configuration = config
         end
       else
