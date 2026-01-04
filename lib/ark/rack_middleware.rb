@@ -29,7 +29,7 @@ module Ark
     def extract_request_context(env)
       request = Rack::Request.new(env)
 
-      {
+      context = {
         request: {
           url: request.url,
           method: request.request_method,
@@ -39,6 +39,12 @@ module Ark
           headers: extract_headers(env)
         }
       }
+
+      # Add session ID for user tracking (if session exists)
+      session_id = extract_session_id(env)
+      context[:session_id] = session_id if session_id
+
+      context
     end
 
     def filtered_params(request)
@@ -73,6 +79,20 @@ module Ark
         headers[header_name] = value
       end
       headers
+    end
+
+    def extract_session_id(env)
+      # Try to get session ID from Rack session
+      session = env["rack.session"]
+      return session.id.to_s if session&.respond_to?(:id) && session.id
+
+      # Fallback: check for session ID in options (set by some session stores)
+      session_id = env["rack.session.options"]&.dig(:id)
+      return session_id.to_s if session_id
+
+      nil
+    rescue StandardError
+      nil
     end
   end
 end
