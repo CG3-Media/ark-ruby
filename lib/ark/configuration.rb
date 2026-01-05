@@ -6,7 +6,9 @@ require "erb"
 module Ark
   class Configuration
     attr_accessor :api_key, :api_url, :environment, :enabled,
-                  :excluded_exceptions, :before_send, :async, :verify_ssl
+                  :excluded_exceptions, :before_send, :async, :verify_ssl,
+                  :transactions_enabled, :transaction_threshold_ms,
+                  :transaction_buffer_size, :transaction_flush_interval
     attr_writer :release
 
     def initialize
@@ -25,6 +27,12 @@ module Ark
       @before_send = nil
       @release = nil
       @env_configured = false  # Track if current env has config
+
+      # Transaction tracking config
+      @transactions_enabled = true
+      @transaction_threshold_ms = 0  # Track all requests by default (0 = no threshold)
+      @transaction_buffer_size = 50  # Flush after N transactions
+      @transaction_flush_interval = 60  # Flush every N seconds
     end
 
     # Load configuration from a YAML file (supports environment-specific config like database.yml)
@@ -77,6 +85,10 @@ module Ark
       return false unless @enabled
 
       true
+    end
+
+    def transactions_enabled?
+      enabled? && @transactions_enabled
     end
 
     def report_data?

@@ -41,9 +41,38 @@ module Ark
       end
     end
 
+    # Transaction tracking via ActiveSupport::Notifications
+    initializer "ark.transaction_tracking" do
+      ActiveSupport::Notifications.subscribe("process_action.action_controller") do |*args|
+        event = ActiveSupport::Notifications::Event.new(*args)
+
+        next unless Ark.configuration&.transactions_enabled?
+
+        payload = event.payload
+        endpoint = "#{payload[:controller]}##{payload[:action]}"
+
+        Ark.track_transaction(
+          endpoint: endpoint,
+          method: payload[:method],
+          duration_ms: event.duration,
+          db_time_ms: payload[:db_runtime],
+          view_time_ms: payload[:view_runtime],
+          status_code: payload[:status],
+          request_id: payload[:request]&.request_id
+        )
+      end
+    end
+
+    # Flush transactions on shutdown
     config.after_initialize do
       if Ark.configuration&.enabled?
         Rails.logger.info "[Ark] Error tracking enabled (env: #{Ark.configuration.environment})"
+
+        if Ark.configuration.transactions_enabled?
+          Rails.logger.info "[Ark] Transaction tracking enabled (threshold: #{Ark.configuration.transaction_threshold_ms}ms)"
+
+          at_exit { Ark.flush_transactions }
+        end
       else
         Rails.logger.warn "[Ark] Error tracking disabled - set ARK_API_KEY to enable"
       end
