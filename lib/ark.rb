@@ -8,6 +8,7 @@ require_relative "ark/version"
 require_relative "ark/configuration"
 require_relative "ark/client"
 require_relative "ark/transaction_tracker"
+require_relative "ark/span_collector"
 require_relative "ark/rack_middleware"
 require_relative "ark/rails" if defined?(Rails::Railtie)
 

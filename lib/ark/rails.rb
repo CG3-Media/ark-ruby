@@ -43,6 +43,20 @@ module Ark
 
     # Transaction tracking via ActiveSupport::Notifications
     initializer "ark.transaction_tracking" do
+      # Subscribe to events for span collection
+      Ark::SpanSubscribers.subscribe!
+
+      # Start span collection when request starts
+      ActiveSupport::Notifications.subscribe("start_processing.action_controller") do |*args|
+        begin
+          next unless Ark.configuration&.transactions_enabled?
+          Ark::SpanCollector.start
+        rescue StandardError => e
+          warn "[Ark] Span collector start error: #{e.message}" if $DEBUG
+        end
+      end
+
+      # Collect transaction and spans when request finishes
       ActiveSupport::Notifications.subscribe("process_action.action_controller") do |*args|
         # Wrap everything in begin/rescue to ensure tracking NEVER affects the host app
         begin
@@ -52,6 +66,10 @@ module Ark
           payload = event.payload
           endpoint = "#{payload[:controller]}##{payload[:action]}"
 
+          # Collect spans
+          collector = Ark::SpanCollector.stop
+          spans = collector&.to_a || []
+
           Ark.track_transaction(
             endpoint: endpoint,
             method: payload[:method],
@@ -59,7 +77,8 @@ module Ark
             db_time_ms: payload[:db_runtime],
             view_time_ms: payload[:view_runtime],
             status_code: payload[:status],
-            request_id: payload[:request]&.request_id
+            request_id: payload[:request]&.request_id,
+            spans: spans
           )
         rescue StandardError => e
           # Silently fail - never impact the host application

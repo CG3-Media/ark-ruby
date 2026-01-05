@@ -17,7 +17,7 @@ module Ark
       @circuit_opened_at = nil
     end
 
-    def track(endpoint:, method:, duration_ms:, status_code:, db_time_ms: nil, view_time_ms: nil, request_id: nil, metadata: {})
+    def track(endpoint:, method:, duration_ms:, status_code:, db_time_ms: nil, view_time_ms: nil, request_id: nil, metadata: {}, spans: [])
       return unless Ark.configuration&.transactions_enabled?
       return if duration_ms < Ark.configuration.transaction_threshold_ms
 
@@ -30,6 +30,7 @@ module Ark
         status_code: status_code,
         request_id: request_id,
         metadata: metadata,
+        spans: spans,
         timestamp: Time.now.utc.iso8601
       }.compact
 
