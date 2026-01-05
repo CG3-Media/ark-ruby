@@ -124,6 +124,15 @@ module Ark
       @environment = api["env"] if api["env"]
       @enabled = api["enabled"] if api.key?("enabled")
       @release = api["release"] || api["revision"] if api["release"] || api["revision"]
+
+      # Handle transactions config
+      if hash["transactions"].is_a?(Hash)
+        tx = hash["transactions"]
+        @transactions_enabled = tx["enabled"] if tx.key?("enabled")
+        @transaction_threshold_ms = tx["threshold_ms"].to_i if tx["threshold_ms"]
+        @transaction_buffer_size = tx["buffer_size"].to_i if tx["buffer_size"]
+        @transaction_flush_interval = tx["flush_interval"].to_i if tx["flush_interval"]
+      end
     end
 
     def deep_merge(base, override)
