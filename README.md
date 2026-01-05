@@ -117,9 +117,64 @@ Ark.capture_message("Something unexpected happened", context: {
 })
 ```
 
-### Adding Context
+## Performance Tracking
 
-Add user and request context to all errors:
+Ark can automatically track request performance metrics from your Rails app.
+
+### Automatic Tracking
+
+Transaction tracking is **enabled by default**. Every request's timing is automatically captured:
+
+- Endpoint (controller#action)
+- Total duration
+- Database time
+- View render time
+- HTTP status code
+
+Data is buffered and sent in batches to minimize overhead.
+
+### Configuration
+
+```ruby
+# config/initializers/ark.rb
+Ark.configure do |config|
+  # Disable transaction tracking entirely
+  config.transactions_enabled = false
+
+  # Only track requests slower than 100ms (default: 0 = track all)
+  config.transaction_threshold_ms = 100
+
+  # Buffer size before sending (default: 50)
+  config.transaction_buffer_size = 50
+
+  # Max seconds between flushes (default: 60)
+  config.transaction_flush_interval = 60
+end
+```
+
+Or in `config/ark.yml`:
+
+```yaml
+production:
+  api:
+    key: 'your-api-key'
+  transactions:
+    enabled: true
+    threshold_ms: 100  # Only track slow requests
+```
+
+### Safety Features
+
+Transaction tracking is designed to never impact your application:
+
+- **Buffered sending**: Transactions are batched, not sent individually
+- **Async delivery**: Network calls happen in background threads
+- **Circuit breaker**: Stops trying if Ark is down (auto-retries after 60s)
+- **Capped memory**: Buffer limited to 500 transactions
+- **Thread limits**: Max 3 concurrent flush threads
+- **Silent failures**: Errors are swallowed, only logged in debug mode
+
+### Adding Context
 
 ```ruby
 # In ApplicationController
@@ -177,6 +232,10 @@ end
 | `async` | `true` | Send errors in background thread |
 | `excluded_exceptions` | `[ActiveRecord::RecordNotFound, ...]` | Exceptions to ignore |
 | `before_send` | `nil` | Callback to modify/filter events |
+| `transactions_enabled` | `true` | Enable/disable performance tracking |
+| `transaction_threshold_ms` | `0` | Min duration to track (0 = all) |
+| `transaction_buffer_size` | `50` | Batch size before sending |
+| `transaction_flush_interval` | `60` | Max seconds between flushes |
 
 ## Development
 

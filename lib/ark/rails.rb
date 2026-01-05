@@ -44,22 +44,27 @@ module Ark
     # Transaction tracking via ActiveSupport::Notifications
     initializer "ark.transaction_tracking" do
       ActiveSupport::Notifications.subscribe("process_action.action_controller") do |*args|
-        event = ActiveSupport::Notifications::Event.new(*args)
+        # Wrap everything in begin/rescue to ensure tracking NEVER affects the host app
+        begin
+          next unless Ark.configuration&.transactions_enabled?
 
-        next unless Ark.configuration&.transactions_enabled?
+          event = ActiveSupport::Notifications::Event.new(*args)
+          payload = event.payload
+          endpoint = "#{payload[:controller]}##{payload[:action]}"
 
-        payload = event.payload
-        endpoint = "#{payload[:controller]}##{payload[:action]}"
-
-        Ark.track_transaction(
-          endpoint: endpoint,
-          method: payload[:method],
-          duration_ms: event.duration,
-          db_time_ms: payload[:db_runtime],
-          view_time_ms: payload[:view_runtime],
-          status_code: payload[:status],
-          request_id: payload[:request]&.request_id
-        )
+          Ark.track_transaction(
+            endpoint: endpoint,
+            method: payload[:method],
+            duration_ms: event.duration,
+            db_time_ms: payload[:db_runtime],
+            view_time_ms: payload[:view_runtime],
+            status_code: payload[:status],
+            request_id: payload[:request]&.request_id
+          )
+        rescue StandardError => e
+          # Silently fail - never impact the host application
+          warn "[Ark] Transaction tracking error: #{e.message}" if $DEBUG
+        end
       end
     end
 
